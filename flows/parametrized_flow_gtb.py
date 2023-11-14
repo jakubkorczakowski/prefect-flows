@@ -30,12 +30,12 @@ def transform(path: Path, fillna: bool) -> pd.DataFrame:
 
 
 @task()
-def write_bq(df: pd.DataFrame) -> None:
+def write_bq(df: pd.DataFrame, color: str) -> None:
     """Write DataFrame to BigQuery."""
     gcp_creds = GcpCredentials.load("taxi-gcp-creds")
 
     df.to_gbq(
-        destination_table='trips_data_all.rides',
+        destination_table=f'trips_data_all.{color}_non_partitioned',
         project_id='still-primer-402318',
         credentials=gcp_creds.get_credentials_from_service_account(),
         chunksize=500_000,
@@ -52,11 +52,11 @@ def etl_gcs_to_bq(year: int, month: int, color: str):
     
     path = extract_from_gcs(color, year, month)
     df = transform(path, False)
-    write_bq(df)
+    write_bq(df, color)
 
 
 @flow()
-def etl_parent_flow_gtb(
+def etl_parent_flow_gtb_all(
     months: list[int] = [1, 2], year: int = 2021, color: str = "yellow"
 ):
     for month in months:
@@ -64,4 +64,4 @@ def etl_parent_flow_gtb(
 
 
 if __name__ == "__main__":
-    etl_parent_flow_gtb()
+    etl_parent_flow_gtb_all()
